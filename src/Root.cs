@@ -59,6 +59,51 @@ namespace niceink
 					Root.SelectPen(-2);
 				}
 			}
+
+			// Handle keyboard input for inline text editing
+			if (Root.InlineTextActive)
+			{
+				const int WM_KEYDOWN = 0x0100;
+				const int WM_CHAR = 0x0102;
+				const int VK_RETURN = 0x0D;
+				const int VK_ESCAPE = 0x1B;
+				const int VK_BACK = 0x08;
+
+				if (m.Msg == WM_KEYDOWN)
+				{
+					int vk = m.WParam.ToInt32();
+					if (vk == VK_RETURN)
+					{
+						Root.FormCollection.CommitInlineText();
+						return true;
+					}
+					else if (vk == VK_ESCAPE)
+					{
+						Root.FormCollection.CancelInlineText();
+						return true;
+					}
+					else if (vk == VK_BACK)
+					{
+						if (Root.InlineText.Length > 0)
+						{
+							Root.InlineText = Root.InlineText.Substring(0, Root.InlineText.Length - 1);
+							Root.UponAllDrawingUpdate = true;
+						}
+						return true;
+					}
+				}
+				else if (m.Msg == WM_CHAR)
+				{
+					char c = (char)m.WParam.ToInt32();
+					if (c >= 32) // printable characters
+					{
+						Root.InlineText += c;
+						Root.UponAllDrawingUpdate = true;
+					}
+					return true;
+				}
+			}
+
 			return false;
 		}
 	}
@@ -124,6 +169,14 @@ namespace niceink
 		public bool TextInputOpen = false;
 		public bool InkVisible = true;
 		public List<TextAnnotation> TextAnnotations = new List<TextAnnotation>();
+
+		// Inline text editing state
+		public bool InlineTextActive = false;
+		public string InlineText = "";
+		public int InlineTextX = 0;
+		public int InlineTextY = 0;
+		public Color InlineTextColor = Color.FromArgb(225, 60, 60);
+		public int InlineTextFontSize = 28;
 
 		public Ink[] UndoStrokes;
 		//public Ink UponUndoStrokes;

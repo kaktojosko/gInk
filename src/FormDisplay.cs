@@ -230,12 +230,14 @@ namespace niceink
 			if (Root.InkVisible)
 				Root.FormCollection.IC.Renderer.Draw(gCanvus, Root.FormCollection.IC.Ink.Strokes);
 			DrawTextAnnotations(gCanvus);
+			DrawInlineText(gCanvus);
 		}
 		public void DrawStrokes(Graphics g)
 		{
 			if (Root.InkVisible)
 				Root.FormCollection.IC.Renderer.Draw(g, Root.FormCollection.IC.Ink.Strokes);
 			DrawTextAnnotations(g);
+			DrawInlineText(g);
 		}
 
 		public void DrawTextAnnotations(Graphics g)
@@ -271,6 +273,53 @@ namespace niceink
 				gCanvus.DrawString(text, font, brush, x, y);
 			}
 			gCanvus.CompositingMode = oldMode;
+		}
+
+		public void DrawInlineText(Graphics g)
+		{
+			if (!Root.InlineTextActive)
+				return;
+
+			System.Drawing.Drawing2D.CompositingMode oldMode = g.CompositingMode;
+			g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
+			using (Font font = new Font("Arial", Root.InlineTextFontSize, FontStyle.Bold))
+			{
+				string displayText = Root.InlineText;
+				// Draw the text
+				if (displayText.Length > 0)
+				{
+					using (SolidBrush brush = new SolidBrush(Root.InlineTextColor))
+					{
+						g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+						g.DrawString(displayText, font, brush, Root.InlineTextX, Root.InlineTextY);
+					}
+				}
+
+				// Draw cursor
+				float cursorX = Root.InlineTextX;
+				if (displayText.Length > 0)
+				{
+					CharacterRange[] ranges = new CharacterRange[] { new CharacterRange(0, displayText.Length) };
+					StringFormat sf = new StringFormat();
+					sf.SetMeasurableCharacterRanges(ranges);
+					RectangleF layoutRect = new RectangleF(Root.InlineTextX, Root.InlineTextY, 10000, 10000);
+					Region[] regions = g.MeasureCharacterRanges(displayText, font, layoutRect, sf);
+					if (regions.Length > 0)
+					{
+						RectangleF bounds = regions[0].GetBounds(g);
+						cursorX = bounds.Right;
+						regions[0].Dispose();
+					}
+					sf.Dispose();
+				}
+
+				float cursorHeight = font.GetHeight(g);
+				using (Pen cursorPen = new Pen(Root.InlineTextColor, 2))
+				{
+					g.DrawLine(cursorPen, cursorX, Root.InlineTextY, cursorX, Root.InlineTextY + cursorHeight);
+				}
+			}
+			g.CompositingMode = oldMode;
 		}
 
 		public void MoveStrokes(int dy)
