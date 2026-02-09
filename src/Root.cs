@@ -61,10 +61,12 @@ namespace niceink
 			}
 
 			// Handle keyboard input for inline text editing
-			if (Root.InlineTextActive)
+			if (Root.InlineTextActive && Root.FormCollection != null)
 			{
 				const int WM_KEYDOWN = 0x0100;
+				const int WM_KEYUP = 0x0101;
 				const int WM_CHAR = 0x0102;
+				const int WM_IME_CHAR = 0x0286;
 				const int VK_RETURN = 0x0D;
 				const int VK_ESCAPE = 0x1B;
 				const int VK_BACK = 0x08;
@@ -91,8 +93,13 @@ namespace niceink
 						}
 						return true;
 					}
+					return true;
 				}
-				else if (m.Msg == WM_CHAR)
+				else if (m.Msg == WM_KEYUP)
+				{
+					return true;
+				}
+				else if (m.Msg == WM_CHAR || m.Msg == WM_IME_CHAR)
 				{
 					char c = (char)m.WParam.ToInt32();
 					if (c >= 32) // printable characters
@@ -166,7 +173,6 @@ namespace niceink
 
 		public bool PanMode = false;
 		public bool TextMode = false;
-		public bool TextInputOpen = false;
 		public bool InkVisible = true;
 		public List<TextAnnotation> TextAnnotations = new List<TextAnnotation>();
 
@@ -298,6 +304,8 @@ namespace niceink
 		}
 		public void StopInk()
 		{
+			InlineTextActive = false;
+			InlineText = "";
 			FormCollection.Close();
 			FormDisplay.Close();
 			FormButtonHitter.Close();
