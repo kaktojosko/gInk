@@ -554,6 +554,10 @@ namespace niceink
 			}
 			else if (Root.TextMode)
 			{
+				if (Root.InlineTextActive)
+				{
+					CommitInlineText();
+				}
 				PlaceText(e.X, e.Y);
 			}
 			else if (Root.PanMode)
@@ -663,6 +667,8 @@ namespace niceink
 		public void SelectPen(int pen)
 		{
 			// -4=text, -3=pan, -2=pointer, -1=eraser, 0+=pens
+			if (Root.InlineTextActive)
+				CommitInlineText();
 			Root.TextMode = false;
 			btText.Image = image_text;
 
@@ -1146,7 +1152,7 @@ namespace niceink
 
 
 
-			if (!Root.PointerMode && !Root.TextInputOpen && !this.TopMost)
+			if (!Root.PointerMode && !Root.InlineTextActive && !this.TopMost)
 				ToTopMost();
 
 			// gpPenWidth status
@@ -1166,7 +1172,7 @@ namespace niceink
 			const int VK_RWIN = 0x5C;
 			bool pressed;
 
-			if (!Root.PointerMode && !Root.TextInputOpen)
+			if (!Root.PointerMode && !Root.InlineTextActive)
 			{
 				// ESC key : Exit
 				short retVal;
@@ -1189,7 +1195,7 @@ namespace niceink
 			}
 
 
-			if (!Root.FingerInAction && !Root.TextInputOpen && (!Root.PointerMode || Root.AllowHotkeyInPointerMode) && Root.Snapping <= 0)
+			if (!Root.FingerInAction && !Root.InlineTextActive && (!Root.PointerMode || Root.AllowHotkeyInPointerMode) && Root.Snapping <= 0)
 			{
 				bool control = ((short)(GetKeyState(VK_LCONTROL) | GetKeyState(VK_RCONTROL)) & 0x8000) == 0x8000;
 				bool alt = ((short)(GetKeyState(VK_LMENU) | GetKeyState(VK_RMENU)) & 0x8000) == 0x8000;
@@ -1460,6 +1466,8 @@ namespace niceink
 				return;
 			}
 
+			if (Root.InlineTextActive)
+				CancelInlineText();
 			Root.ClearInk();
 			SaveUndoStrokes();
 		}
@@ -1535,34 +1543,33 @@ namespace niceink
 			else if (Root.LastPen >= 0 && Root.LastPen < Root.MaxPenCount)
 				textColor = Root.PenAttr[Root.LastPen].Color;
 
-			Root.TextInputOpen = true;
+			Root.InlineTextActive = true;
+			Root.InlineText = "";
+			Root.InlineTextX = x;
+			Root.InlineTextY = y;
+			Root.InlineTextColor = textColor;
 
-			using (FormTextInput form = new FormTextInput())
+			Root.UponAllDrawingUpdate = true;
+		}
+
+		public void CommitInlineText()
+		{
+			if (Root.InlineText.Length > 0)
 			{
-				form.TextOrFontChanged += delegate
-				{
-					Root.FormDisplay.ClearCanvus();
-					Root.FormDisplay.DrawStrokes();
-					Root.FormDisplay.DrawPreviewText(form.InputText, x, y, textColor, form.FontSize);
-					Root.FormDisplay.DrawButtons(false);
-					Root.FormDisplay.UpdateFormDisplay(true);
-				};
-
-				DialogResult result = form.ShowDialog();
-				Root.TextInputOpen = false;
-
-				if (result == DialogResult.OK && form.InputText.Length > 0)
-				{
-					TextAnnotation annotation = new TextAnnotation(form.InputText, x, y, textColor, form.FontSize);
-					Root.TextAnnotations.Add(annotation);
-					SaveUndoStrokes();
-				}
-
-				Root.FormDisplay.ClearCanvus();
-				Root.FormDisplay.DrawStrokes();
-				Root.FormDisplay.DrawButtons(true);
-				Root.FormDisplay.UpdateFormDisplay(true);
+				TextAnnotation annotation = new TextAnnotation(Root.InlineText, Root.InlineTextX, Root.InlineTextY, Root.InlineTextColor, Root.InlineTextFontSize);
+				Root.TextAnnotations.Add(annotation);
+				SaveUndoStrokes();
 			}
+			Root.InlineTextActive = false;
+			Root.InlineText = "";
+			Root.UponAllDrawingUpdate = true;
+		}
+
+		public void CancelInlineText()
+		{
+			Root.InlineTextActive = false;
+			Root.InlineText = "";
+			Root.UponAllDrawingUpdate = true;
 		}
 
 		short LastF4Status = 0;
