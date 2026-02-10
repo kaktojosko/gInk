@@ -279,14 +279,6 @@ namespace niceink
 			pboxPenWidthIndicator.Left = (int)Math.Sqrt(Root.GlobalPenWidth * 30);
 			gpPenWidth.Controls.Add(pboxPenWidthIndicator);
 
-			// Initialize text size panel position (under btTextSize button)
-			gpTextSize.Left = gpButtonsLeft + btTextSize.Left - gpTextSize.Width / 2 + btTextSize.Width / 2;
-			gpTextSize.Top = gpButtonsTop - gpTextSize.Height - 10;
-			
-			pboxTextSizeIndicator.Top = 0;
-			UpdateTextSizeIndicator();
-			gpTextSize.Controls.Add(pboxTextSizeIndicator);
-
 			IC = new InkOverlay(this.Handle);
 			IC.CollectionMode = CollectionMode.InkOnly;
 			IC.AutoRedraw = false;
@@ -798,11 +790,6 @@ namespace niceink
 				Root.gpPenWidthVisible = false;
 				Root.UponSubPanelUpdate = true;
 			}
-			if (Root.gpTextSizeVisible)
-			{
-				Root.gpTextSizeVisible = false;
-				Root.UponSubPanelUpdate = true;
-			}
 			else
 				Root.UponButtonsUpdate |= 0x2;
 
@@ -886,11 +873,13 @@ namespace niceink
 			if (Root.PointerMode)
 				return;
 
-			Root.gpTextSizeVisible = !Root.gpTextSizeVisible;
-			if (Root.gpTextSizeVisible)
-				Root.UponButtonsUpdate |= 0x2;
-			else
-				Root.UponSubPanelUpdate = true;
+			// Open text size dialog
+			FormTextSize formTextSize = new FormTextSize(Root);
+			formTextSize.Location = new Point(
+				gpButtonsLeft + btTextSize.Left + btTextSize.Width / 2 - formTextSize.Width / 2,
+				gpButtonsTop - formTextSize.Height - 5
+			);
+			formTextSize.Show(this);
 		}
 
 		public void btSnap_Click(object sender, EventArgs e)
@@ -1033,74 +1022,6 @@ namespace niceink
 			Root.gpPenWidthVisible = false;
 			Root.UponSubPanelUpdate = true;
 			gpPenWidth_MouseOn = false;
-		}
-
-		// Text size panel handlers
-		bool gpTextSize_MouseOn = false;
-
-		private void UpdateTextSizeIndicator()
-		{
-			// Map text size (8-72) to indicator position (10-290)
-			int x = 10 + (Root.GlobalTextSize - 8) * 280 / 64;
-			pboxTextSizeIndicator.Left = x - pboxTextSizeIndicator.Width / 2;
-		}
-
-		private void gpTextSize_MouseDown(object sender, MouseEventArgs e)
-		{
-			gpTextSize_MouseOn = true;
-		}
-
-		private void gpTextSize_MouseMove(object sender, MouseEventArgs e)
-		{
-			if (gpTextSize_MouseOn)
-			{
-				if (e.X < 10 || gpTextSize.Width - e.X < 10)
-					return;
-
-				// Map position (10-290) to text size (8-72)
-				Root.GlobalTextSize = 8 + (e.X - 10) * 64 / 280;
-				UpdateTextSizeIndicator();
-				Root.UponButtonsUpdate |= 0x2;
-			}
-		}
-
-		private void gpTextSize_MouseUp(object sender, MouseEventArgs e)
-		{
-			if (e.X >= 10 && gpTextSize.Width - e.X >= 10)
-			{
-				Root.GlobalTextSize = 8 + (e.X - 10) * 64 / 280;
-				UpdateTextSizeIndicator();
-			}
-
-			Root.gpTextSizeVisible = false;
-			Root.UponSubPanelUpdate = true;
-			gpTextSize_MouseOn = false;
-		}
-
-		private void pboxTextSizeIndicator_MouseDown(object sender, MouseEventArgs e)
-		{
-			gpTextSize_MouseOn = true;
-		}
-
-		private void pboxTextSizeIndicator_MouseMove(object sender, MouseEventArgs e)
-		{
-			if (gpTextSize_MouseOn)
-			{
-				int x = e.X + pboxTextSizeIndicator.Left;
-				if (x < 10 || gpTextSize.Width - x < 10)
-					return;
-
-				Root.GlobalTextSize = 8 + (x - 10) * 64 / 280;
-				UpdateTextSizeIndicator();
-				Root.UponButtonsUpdate |= 0x2;
-			}
-		}
-
-		private void pboxTextSizeIndicator_MouseUp(object sender, MouseEventArgs e)
-		{
-			Root.gpTextSizeVisible = false;
-			Root.UponSubPanelUpdate = true;
-			gpTextSize_MouseOn = false;
 		}
 
 		private void SetPenTipCursor()
@@ -1252,11 +1173,6 @@ namespace niceink
 
 			if (Root.gpPenWidthVisible != gpPenWidth.Visible)
 				gpPenWidth.Visible = Root.gpPenWidthVisible;
-
-			// gpTextSize status
-
-			if (Root.gpTextSizeVisible != gpTextSize.Visible)
-				gpTextSize.Visible = Root.gpTextSizeVisible;
 
 			// hotkeys
 
@@ -1525,8 +1441,6 @@ namespace niceink
 							gpButtons.Left = gpButtonsLeft;
 						gpPenWidth.Left = gpButtonsLeft + btPenWidth.Left - gpPenWidth.Width / 2 + btPenWidth.Width / 2;
 						gpPenWidth.Top = gpButtonsTop - gpPenWidth.Height - 10;
-						gpTextSize.Left = gpButtonsLeft + btTextSize.Left - gpTextSize.Width / 2 + btTextSize.Width / 2;
-						gpTextSize.Top = gpButtonsTop - gpTextSize.Height - 10;
 						gpButtons.Top = gpButtonsTop;
 						Root.UponAllDrawingUpdate = true;
 					}
@@ -1673,13 +1587,6 @@ namespace niceink
 			IC.Enabled = true;
 			this.Cursor = System.Windows.Forms.Cursors.Default;
 			Root.UponButtonsUpdate |= 0x2;
-			
-			// Hide text size panel
-			if (Root.gpTextSizeVisible)
-			{
-				Root.gpTextSizeVisible = false;
-				Root.UponSubPanelUpdate = true;
-			}
 			
 			// Finish any active text editing
 			if (editingTextObj != null)

@@ -49,10 +49,6 @@
 			this.gpButtons.SuspendLayout();
 			this.gpPenWidth.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.pboxPenWidthIndicator)).BeginInit();
-			this.gpTextSize = new System.Windows.Forms.Panel();
-			this.pboxTextSizeIndicator = new System.Windows.Forms.PictureBox();
-			this.gpTextSize.SuspendLayout();
-			((System.ComponentModel.ISupportInitialize)(this.pboxTextSizeIndicator)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// gpButtons
@@ -342,41 +338,12 @@
 			this.pboxPenWidthIndicator.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pboxPenWidthIndicator_MouseMove);
 			this.pboxPenWidthIndicator.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pboxPenWidthIndicator_MouseUp);
 			// 
-			// gpTextSize
-			// 
-			this.gpTextSize.BackColor = System.Drawing.Color.WhiteSmoke;
-			this.gpTextSize.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-			this.gpTextSize.Controls.Add(this.pboxTextSizeIndicator);
-			this.gpTextSize.Location = new System.Drawing.Point(174, 326);
-			this.gpTextSize.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-			this.gpTextSize.Name = "gpTextSize";
-			this.gpTextSize.Size = new System.Drawing.Size(300, 80);
-			this.gpTextSize.TabIndex = 5;
-			this.gpTextSize.Visible = false;
-			this.gpTextSize.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gpTextSize_MouseDown);
-			this.gpTextSize.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpTextSize_MouseMove);
-			this.gpTextSize.MouseUp += new System.Windows.Forms.MouseEventHandler(this.gpTextSize_MouseUp);
-			// 
-			// pboxTextSizeIndicator
-			// 
-			this.pboxTextSizeIndicator.BackColor = System.Drawing.Color.Orange;
-			this.pboxTextSizeIndicator.Location = new System.Drawing.Point(117, 0);
-			this.pboxTextSizeIndicator.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-			this.pboxTextSizeIndicator.Name = "pboxTextSizeIndicator";
-			this.pboxTextSizeIndicator.Size = new System.Drawing.Size(8, 80);
-			this.pboxTextSizeIndicator.TabIndex = 5;
-			this.pboxTextSizeIndicator.TabStop = false;
-			this.pboxTextSizeIndicator.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pboxTextSizeIndicator_MouseDown);
-			this.pboxTextSizeIndicator.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pboxTextSizeIndicator_MouseMove);
-			this.pboxTextSizeIndicator.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pboxTextSizeIndicator_MouseUp);
-			// 
 			// FormCollection
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
 			this.BackColor = System.Drawing.Color.White;
 			this.ClientSize = new System.Drawing.Size(1294, 789);
-			this.Controls.Add(this.gpTextSize);
 			this.Controls.Add(this.gpPenWidth);
 			this.Controls.Add(this.gpButtons);
 			this.ForeColor = System.Drawing.Color.LawnGreen;
@@ -394,8 +361,6 @@
 			this.gpButtons.ResumeLayout(false);
 			this.gpPenWidth.ResumeLayout(false);
 			((System.ComponentModel.ISupportInitialize)(this.pboxPenWidthIndicator)).EndInit();
-			this.gpTextSize.ResumeLayout(false);
-			((System.ComponentModel.ISupportInitialize)(this.pboxTextSizeIndicator)).EndInit();
 			this.ResumeLayout(false);
 
 		}
@@ -419,8 +384,6 @@
 		public System.Windows.Forms.Button btPan;
 		public System.Windows.Forms.Button btText;
 		public System.Windows.Forms.Button btInkVisible;
-		public System.Windows.Forms.Panel gpTextSize;
-		private System.Windows.Forms.PictureBox pboxTextSizeIndicator;
 	}
 }
 

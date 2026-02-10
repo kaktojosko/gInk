@@ -144,7 +144,6 @@ namespace niceink
 		public int GlobalPenWidth = 80;
 		public int GlobalTextSize = 24;  // Default text size
 		public bool gpPenWidthVisible = false;
-		public bool gpTextSizeVisible = false;  // Text size panel visibility
 		public string SnapshotFileFullPath = ""; // used to record the last snapshot file name, to select it when the balloon is clicked
 
 		public Root()
