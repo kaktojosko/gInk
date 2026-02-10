@@ -26,7 +26,7 @@ namespace niceink
 		public Bitmap image_eraser_act, image_eraser;
 		public Bitmap image_pan_act, image_pan;
 		public Bitmap image_visible_not, image_visible;
-		public Bitmap image_text_act, image_text;
+		public Bitmap image_text, image_text_act;
 		public System.Windows.Forms.Cursor cursorred, cursorsnap;
 		public System.Windows.Forms.Cursor cursortip;
 
@@ -88,6 +88,9 @@ namespace niceink
 			btText.Height = (int)(gpButtons.Height * 0.88);
 			btText.Width = btText.Height;
 			btText.Top = (int)(gpButtons.Height * 0.07);
+			btTextSize.Height = (int)(gpButtons.Height * 0.88);
+			btTextSize.Width = btTextSize.Height;
+			btTextSize.Top = (int)(gpButtons.Height * 0.07);
 
 			btPen = new Button[Root.MaxPenCount];
 
@@ -160,16 +163,6 @@ namespace niceink
 			{
 				btPointer.Visible = false;
 			}
-			if (Root.TextEnabled)
-			{
-				btText.Visible = true;
-				btText.Left = cumulatedleft;
-				cumulatedleft += (int)(btText.Width * 1.1);
-			}
-			else
-			{
-				btText.Visible = false;
-			}
 			cumulatedleft += (int)(btStop.Width * 0.8);
 			if (Root.PenWidthEnabled)
 			{
@@ -191,6 +184,16 @@ namespace niceink
 			{
 				btInkVisible.Visible = false;
 			}
+			// Text button is always enabled
+			btText.Visible = true;
+			btText.Left = cumulatedleft;
+			cumulatedleft += (int)(btText.Width * 1.1);
+			
+			// Text size button is always enabled
+			btTextSize.Visible = true;
+			btTextSize.Left = cumulatedleft;
+			cumulatedleft += (int)(btTextSize.Width * 1.1);
+			
 			if (Root.SnapEnabled)
 			{
 				btSnap.Visible = true;
@@ -275,6 +278,14 @@ namespace niceink
 			pboxPenWidthIndicator.Top = 0;
 			pboxPenWidthIndicator.Left = (int)Math.Sqrt(Root.GlobalPenWidth * 30);
 			gpPenWidth.Controls.Add(pboxPenWidthIndicator);
+
+			// Initialize text size panel position (under btTextSize button)
+			gpTextSize.Left = gpButtonsLeft + btTextSize.Left - gpTextSize.Width / 2 + btTextSize.Width / 2;
+			gpTextSize.Top = gpButtonsTop - gpTextSize.Height - 10;
+			
+			pboxTextSizeIndicator.Top = 0;
+			UpdateTextSizeIndicator();
+			gpTextSize.Controls.Add(pboxTextSizeIndicator);
 
 			IC = new InkOverlay(this.Handle);
 			IC.CollectionMode = CollectionMode.InkOnly;
@@ -430,11 +441,12 @@ namespace niceink
 			this.toolTip.SetToolTip(this.btEraser, Root.Local.ButtonNameErasor + " (" + Root.Hotkey_Eraser.ToString() + ")");
 			this.toolTip.SetToolTip(this.btPan, Root.Local.ButtonNamePan + " (" + Root.Hotkey_Pan.ToString() + ")");
 			this.toolTip.SetToolTip(this.btPointer, Root.Local.ButtonNameMousePointer + " (" + Root.Hotkey_Pointer.ToString() + ")");
-			this.toolTip.SetToolTip(this.btText, Root.Local.ButtonNameText);
 			this.toolTip.SetToolTip(this.btInkVisible, Root.Local.ButtonNameInkVisible + " (" + Root.Hotkey_InkVisible.ToString() + ")");
 			this.toolTip.SetToolTip(this.btSnap, Root.Local.ButtonNameSnapshot + " (" + Root.Hotkey_Snap.ToString() + ")");
 			this.toolTip.SetToolTip(this.btUndo, Root.Local.ButtonNameUndo + " (" + Root.Hotkey_Undo.ToString() + ")");
 			this.toolTip.SetToolTip(this.btClear, Root.Local.ButtonNameClear + " (" + Root.Hotkey_Clear.ToString() + ")");
+			this.toolTip.SetToolTip(this.btText, "Text Tool (T)");
+			this.toolTip.SetToolTip(this.btTextSize, "Text size");
 			this.toolTip.SetToolTip(this.btStop, Root.Local.ButtonNameExit + " (ESC)");
 		}
 
@@ -458,8 +470,9 @@ namespace niceink
 			Root.UndoStrokes[Root.UndoP].DeleteStrokes();
 			if (IC.Ink.Strokes.Count > 0)
 				Root.UndoStrokes[Root.UndoP].AddStrokesAtRectangle(IC.Ink.Strokes, IC.Ink.Strokes.GetBoundingBox());
-
-			Root.UndoTextAnnotations[Root.UndoP] = new List<TextAnnotation>(Root.TextAnnotations);
+			
+			// Save texts
+			Root.UndoTexts[Root.UndoP] = Root.CloneTextList(Root.TextObjects);
 		}
 
 		private void IC_CursorDown(object sender, InkCollectorCursorDownEventArgs e)
@@ -476,6 +489,12 @@ namespace niceink
 
 		private void IC_MouseDown(object sender, CancelMouseEventArgs e)
 		{
+			// Text mode is handled by FormCollection_MouseDown
+			if (Root.TextMode)
+			{
+				return;
+			}
+
 			if (Root.gpPenWidthVisible)
 			{
 				Root.gpPenWidthVisible = false;
@@ -551,14 +570,6 @@ namespace niceink
 				Root.SnappingRect = new Rectangle(left + this.Left, top + this.Top, width, height);
 				Root.UponTakingSnap = true;
 				ExitSnapping();
-			}
-			else if (Root.TextMode)
-			{
-				if (Root.InlineTextActive)
-				{
-					CommitInlineText();
-				}
-				PlaceText(e.X, e.Y);
 			}
 			else if (Root.PanMode)
 			{
@@ -666,38 +677,15 @@ namespace niceink
 
 		public void SelectPen(int pen)
 		{
-			// -4=text, -3=pan, -2=pointer, -1=eraser, 0+=pens
-			if (Root.InlineTextActive)
-				CommitInlineText();
-			Root.TextMode = false;
-			btText.Image = image_text;
+			// -3=pan, -2=pointer, -1=eraser, 0+=pens, -4=text
 
-			if (pen == -4)
+			// Exit text mode if selecting another tool
+			if (pen != -4 && Root.TextMode)
 			{
-				for (int b = 0; b < Root.MaxPenCount; b++)
-					btPen[b].Image = image_pen[b];
-				btEraser.Image = image_eraser;
-				btPointer.Image = image_pointer;
-				btPan.Image = image_pan;
-				btText.Image = image_text_act;
-				EnterEraserMode(false);
-				Root.UnPointer();
-				Root.PanMode = false;
-				Root.TextMode = true;
-
-				this.Cursor = System.Windows.Forms.Cursors.Cross;
-
-				try
-				{
-					IC.SetWindowInputRectangle(new Rectangle(0, 0, 1, 1));
-				}
-				catch
-				{
-					Thread.Sleep(1);
-					IC.SetWindowInputRectangle(new Rectangle(0, 0, 1, 1));
-				}
+				ExitTextMode();
 			}
-			else if (pen == -3)
+
+			if (pen == -3)
 			{
 				for (int b = 0; b < Root.MaxPenCount; b++)
 					btPen[b].Image = image_pen[b];
@@ -805,6 +793,11 @@ namespace niceink
 				Root.gpPenWidthVisible = false;
 				Root.UponSubPanelUpdate = true;
 			}
+			if (Root.gpTextSizeVisible)
+			{
+				Root.gpTextSizeVisible = false;
+				Root.UponSubPanelUpdate = true;
+			}
 			else
 				Root.UponButtonsUpdate |= 0x2;
 
@@ -872,6 +865,24 @@ namespace niceink
 
 			Root.gpPenWidthVisible = !Root.gpPenWidthVisible;
 			if (Root.gpPenWidthVisible)
+				Root.UponButtonsUpdate |= 0x2;
+			else
+				Root.UponSubPanelUpdate = true;
+		}
+
+		private void btTextSize_Click(object sender, EventArgs e)
+		{
+			if (ToolbarMoved)
+			{
+				ToolbarMoved = false;
+				return;
+			}
+
+			if (Root.PointerMode)
+				return;
+
+			Root.gpTextSizeVisible = !Root.gpTextSizeVisible;
+			if (Root.gpTextSizeVisible)
 				Root.UponButtonsUpdate |= 0x2;
 			else
 				Root.UponSubPanelUpdate = true;
@@ -951,6 +962,7 @@ namespace niceink
 		bool LastRedoStatus = false;
 		bool LastSnapStatus = false;
 		bool LastClearStatus = false;
+		bool LastTextStatus = false;
 
 		private void gpPenWidth_MouseDown(object sender, MouseEventArgs e)
 		{
@@ -1018,6 +1030,74 @@ namespace niceink
 			gpPenWidth_MouseOn = false;
 		}
 
+		// Text size panel handlers
+		bool gpTextSize_MouseOn = false;
+
+		private void UpdateTextSizeIndicator()
+		{
+			// Map text size (8-72) to indicator position (10-290)
+			int x = 10 + (Root.GlobalTextSize - 8) * 280 / 64;
+			pboxTextSizeIndicator.Left = x - pboxTextSizeIndicator.Width / 2;
+		}
+
+		private void gpTextSize_MouseDown(object sender, MouseEventArgs e)
+		{
+			gpTextSize_MouseOn = true;
+		}
+
+		private void gpTextSize_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (gpTextSize_MouseOn)
+			{
+				if (e.X < 10 || gpTextSize.Width - e.X < 10)
+					return;
+
+				// Map position (10-290) to text size (8-72)
+				Root.GlobalTextSize = 8 + (e.X - 10) * 64 / 280;
+				UpdateTextSizeIndicator();
+				Root.UponButtonsUpdate |= 0x2;
+			}
+		}
+
+		private void gpTextSize_MouseUp(object sender, MouseEventArgs e)
+		{
+			if (e.X >= 10 && gpTextSize.Width - e.X >= 10)
+			{
+				Root.GlobalTextSize = 8 + (e.X - 10) * 64 / 280;
+				UpdateTextSizeIndicator();
+			}
+
+			Root.gpTextSizeVisible = false;
+			Root.UponSubPanelUpdate = true;
+			gpTextSize_MouseOn = false;
+		}
+
+		private void pboxTextSizeIndicator_MouseDown(object sender, MouseEventArgs e)
+		{
+			gpTextSize_MouseOn = true;
+		}
+
+		private void pboxTextSizeIndicator_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (gpTextSize_MouseOn)
+			{
+				int x = e.X + pboxTextSizeIndicator.Left;
+				if (x < 10 || gpTextSize.Width - x < 10)
+					return;
+
+				Root.GlobalTextSize = 8 + (x - 10) * 64 / 280;
+				UpdateTextSizeIndicator();
+				Root.UponButtonsUpdate |= 0x2;
+			}
+		}
+
+		private void pboxTextSizeIndicator_MouseUp(object sender, MouseEventArgs e)
+		{
+			Root.gpTextSizeVisible = false;
+			Root.UponSubPanelUpdate = true;
+			gpTextSize_MouseOn = false;
+		}
+
 		private void SetPenTipCursor()
 		{
 			Bitmap bitmaptip = (Bitmap)(niceink.Properties.Resources._null).Clone();
@@ -1061,6 +1141,14 @@ namespace niceink
 		short LastESCStatus = 0;
 		private void tiSlide_Tick(object sender, EventArgs e)
 		{
+			// Cursor blink for text editing
+			if (editingTextObj != null && (DateTime.Now - lastCursorBlink).TotalMilliseconds > 500)
+			{
+				showCursor = !showCursor;
+				lastCursorBlink = DateTime.Now;
+				RedrawWithEditingText();
+			}
+
 			// ignore the first tick
 			if (LastTickTime.Year == 1987)
 			{
@@ -1152,13 +1240,18 @@ namespace niceink
 
 
 
-			if (!Root.PointerMode && !Root.InlineTextActive && !this.TopMost)
+			if (!Root.PointerMode && !this.TopMost)
 				ToTopMost();
 
 			// gpPenWidth status
 
 			if (Root.gpPenWidthVisible != gpPenWidth.Visible)
 				gpPenWidth.Visible = Root.gpPenWidthVisible;
+
+			// gpTextSize status
+
+			if (Root.gpTextSizeVisible != gpTextSize.Visible)
+				gpTextSize.Visible = Root.gpTextSizeVisible;
 
 			// hotkeys
 
@@ -1172,7 +1265,7 @@ namespace niceink
 			const int VK_RWIN = 0x5C;
 			bool pressed;
 
-			if (!Root.PointerMode && !Root.InlineTextActive)
+			if (!Root.PointerMode)
 			{
 				// ESC key : Exit
 				short retVal;
@@ -1195,7 +1288,7 @@ namespace niceink
 			}
 
 
-			if (!Root.FingerInAction && !Root.InlineTextActive && (!Root.PointerMode || Root.AllowHotkeyInPointerMode) && Root.Snapping <= 0)
+			if (!Root.FingerInAction && (!Root.PointerMode || Root.AllowHotkeyInPointerMode) && Root.Snapping <= 0)
 			{
 				bool control = ((short)(GetKeyState(VK_LCONTROL) | GetKeyState(VK_RCONTROL)) & 0x8000) == 0x8000;
 				bool alt = ((short)(GetKeyState(VK_LMENU) | GetKeyState(VK_RMENU)) & 0x8000) == 0x8000;
@@ -1205,7 +1298,7 @@ namespace niceink
 				for (int p = 0; p < Root.MaxPenCount; p++)
 				{
 					pressed = (GetKeyState(Root.Hotkey_Pens[p].Key) & 0x8000) == 0x8000;
-					if(pressed && !LastPenStatus[p] && Root.Hotkey_Pens[p].ModifierMatch(control, alt, shift, win))
+					if(pressed && !LastPenStatus[p] && Root.Hotkey_Pens[p].ModifierMatch(control, alt, shift, win) && editingTextObj == null)
 					{
 						SelectPen(p);
 					}
@@ -1213,7 +1306,7 @@ namespace niceink
 				}
 
 				pressed = (GetKeyState(Root.Hotkey_Eraser.Key) & 0x8000) == 0x8000;
-				if (pressed && !LastEraserStatus && Root.Hotkey_Eraser.ModifierMatch(control, alt, shift, win))
+				if (pressed && !LastEraserStatus && Root.Hotkey_Eraser.ModifierMatch(control, alt, shift, win) && editingTextObj == null)
 				{
 					SelectPen(-1);
 				}
@@ -1244,14 +1337,14 @@ namespace niceink
 				LastRedoStatus = pressed;
 
 				pressed = (GetKeyState(Root.Hotkey_Pointer.Key) & 0x8000) == 0x8000;
-				if (pressed && !LastPointerStatus && Root.Hotkey_Pointer.ModifierMatch(control, alt, shift, win))
+				if (pressed && !LastPointerStatus && Root.Hotkey_Pointer.ModifierMatch(control, alt, shift, win) && editingTextObj == null)
 				{
 					SelectPen(-2);
 				}
 				LastPointerStatus = pressed;
 
 				pressed = (GetKeyState(Root.Hotkey_Pan.Key) & 0x8000) == 0x8000;
-				if (pressed && !LastPanStatus && Root.Hotkey_Pan.ModifierMatch(control, alt, shift, win))
+				if (pressed && !LastPanStatus && Root.Hotkey_Pan.ModifierMatch(control, alt, shift, win) && editingTextObj == null)
 				{
 					SelectPen(-3);
 				}
@@ -1270,6 +1363,17 @@ namespace niceink
 					btSnap_Click(null, null);
 				}
 				LastSnapStatus = pressed;
+			}
+
+			// Text tool hotkey (T)
+			if (!Root.FingerInAction && !Root.PointerMode && Root.Snapping <= 0)
+			{
+				bool tPressed = (GetKeyState((int)Keys.T) & 0x8000) == 0x8000;
+				if (tPressed && !LastTextStatus)
+				{
+					EnterTextMode();
+				}
+				LastTextStatus = tPressed;
 			}
 
 			if (Root.Snapping < 0)
@@ -1466,8 +1570,6 @@ namespace niceink
 				return;
 			}
 
-			if (Root.InlineTextActive)
-				CancelInlineText();
 			Root.ClearInk();
 			SaveUndoStrokes();
 		}
@@ -1532,44 +1634,288 @@ namespace niceink
 				return;
 			}
 
-			SelectPen(-4);
+			EnterTextMode();
 		}
 
-		private void PlaceText(int x, int y)
+		public void btText_MouseUp(object sender, MouseEventArgs e)
 		{
-			Color textColor = Color.FromArgb(225, 60, 60);
-			if (Root.CurrentPen >= 0 && Root.CurrentPen < Root.MaxPenCount)
-				textColor = Root.PenAttr[Root.CurrentPen].Color;
-			else if (Root.LastPen >= 0 && Root.LastPen < Root.MaxPenCount)
-				textColor = Root.PenAttr[Root.LastPen].Color;
-
-			Root.InlineTextActive = true;
-			Root.InlineText = "";
-			Root.InlineTextX = x;
-			Root.InlineTextY = y;
-			Root.InlineTextColor = textColor;
-
-			Root.UponAllDrawingUpdate = true;
-		}
-
-		public void CommitInlineText()
-		{
-			if (Root.InlineText.Length > 0)
+			if (ToolbarMoved)
 			{
-				TextAnnotation annotation = new TextAnnotation(Root.InlineText, Root.InlineTextX, Root.InlineTextY, Root.InlineTextColor, Root.InlineTextFontSize);
-				Root.TextAnnotations.Add(annotation);
-				SaveUndoStrokes();
+				ToolbarMoved = false;
+				return;
 			}
-			Root.InlineTextActive = false;
-			Root.InlineText = "";
-			Root.UponAllDrawingUpdate = true;
+
+			// Right click opens text size panel
+			if (e.Button == MouseButtons.Right)
+			{
+				if (Root.PointerMode)
+					return;
+
+				Root.gpTextSizeVisible = !Root.gpTextSizeVisible;
+				if (Root.gpTextSizeVisible)
+					Root.UponButtonsUpdate |= 0x2;
+				else
+					Root.UponSubPanelUpdate = true;
+			}
 		}
 
-		public void CancelInlineText()
+		private void EnterTextMode()
 		{
-			Root.InlineTextActive = false;
-			Root.InlineText = "";
-			Root.UponAllDrawingUpdate = true;
+			// Disable ink collection while in text mode
+			IC.Enabled = false;
+			Root.TextMode = true;
+			
+			// Change cursor to indicate text mode
+			this.Cursor = System.Windows.Forms.Cursors.Cross;
+			
+			// Update button images
+			for (int b = 0; b < Root.MaxPenCount; b++)
+				btPen[b].Image = image_pen[b];
+			btEraser.Image = image_eraser;
+			btPointer.Image = image_pointer;
+			btPan.Image = image_pan;
+			btText.Image = image_text_act;
+			
+			Root.UnPointer();
+			Root.PanMode = false;
+			Root.UponButtonsUpdate |= 0x2;
+		}
+
+		private void ExitTextMode()
+		{
+			Root.TextMode = false;
+			btText.Image = image_text;
+			IC.Enabled = true;
+			this.Cursor = System.Windows.Forms.Cursors.Default;
+			Root.UponButtonsUpdate |= 0x2;
+			
+			// Hide text size panel
+			if (Root.gpTextSizeVisible)
+			{
+				Root.gpTextSizeVisible = false;
+				Root.UponSubPanelUpdate = true;
+			}
+			
+			// Finish any active text editing
+			if (editingTextObj != null)
+			{
+				FinishTextEditing();
+			}
+		}
+
+		// Active text editing state
+		public TextObject editingTextObj = null;
+		private int editCursorPos = 0;
+		private bool showCursor = true;
+		private DateTime lastCursorBlink = DateTime.Now;
+
+		private void StartTextEditing(int x, int y)
+		{
+			// If there's already an active text edit, finish it first
+			if (editingTextObj != null)
+			{
+				FinishTextEditing();
+			}
+
+			// Get the text color based on current pen or default to white with outline
+			bool hasOutline = false;
+			Color textColor;
+			
+			if (Root.CurrentPen >= 0 && Root.PenEnabled[Root.CurrentPen])
+			{
+				// Use current pen color - force opaque (no transparency)
+				Color penColor = Root.PenAttr[Root.CurrentPen].Color;
+				textColor = Color.FromArgb(255, penColor.R, penColor.G, penColor.B);
+			}
+			else
+			{
+				// Default: white text with black outline
+				textColor = Color.White;
+				hasOutline = true;
+			}
+
+			// Create editing text object (empty initially)
+			editingTextObj = new TextObject("", x, y, textColor, hasOutline, Root.GlobalTextSize);
+			editCursorPos = 0;
+			showCursor = true;
+			lastCursorBlink = DateTime.Now;
+			
+			// Enable key preview and focus the form to capture key presses
+			this.KeyPreview = true;
+			this.Focus();
+			this.Activate();
+			
+			// Hook keyboard events
+			this.KeyPress += FormCollection_TextKeyPress;
+			this.KeyDown += FormCollection_TextKeyDown;
+			this.PreviewKeyDown += FormCollection_PreviewKeyDown;
+			
+			// Initial draw to show cursor
+			RedrawWithEditingText();
+		}
+
+		private void FormCollection_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+		{
+			// Handle special keys
+			if (editingTextObj != null)
+			{
+				switch (e.KeyCode)
+				{
+					case Keys.Enter:
+					case Keys.Escape:
+					case Keys.Left:
+					case Keys.Right:
+					case Keys.Back:
+					case Keys.Delete:
+					case Keys.Home:
+					case Keys.End:
+						e.IsInputKey = true;
+						break;
+				}
+			}
+		}
+
+		private void FormCollection_TextKeyDown(object sender, KeyEventArgs e)
+		{
+			if (editingTextObj == null) return;
+
+			switch (e.KeyCode)
+			{
+				case Keys.Enter:
+					e.Handled = true;
+					FinishTextEditing();
+					break;
+				case Keys.Escape:
+					e.Handled = true;
+					CancelTextEditing();
+					break;
+				case Keys.Back:
+					e.Handled = true;
+					if (editCursorPos > 0 && editingTextObj.Text.Length > 0)
+					{
+						editingTextObj.Text = editingTextObj.Text.Substring(0, editCursorPos - 1) + 
+							                  editingTextObj.Text.Substring(editCursorPos);
+						editCursorPos--;
+						RedrawWithEditingText();
+					}
+					break;
+				case Keys.Delete:
+					e.Handled = true;
+					if (editCursorPos < editingTextObj.Text.Length)
+					{
+						editingTextObj.Text = editingTextObj.Text.Substring(0, editCursorPos) + 
+							                  editingTextObj.Text.Substring(editCursorPos + 1);
+						RedrawWithEditingText();
+					}
+					break;
+				case Keys.Left:
+					e.Handled = true;
+					if (editCursorPos > 0) editCursorPos--;
+					RedrawWithEditingText();
+					break;
+				case Keys.Right:
+					e.Handled = true;
+					if (editCursorPos < editingTextObj.Text.Length) editCursorPos++;
+					RedrawWithEditingText();
+					break;
+				case Keys.Home:
+					e.Handled = true;
+					editCursorPos = 0;
+					RedrawWithEditingText();
+					break;
+				case Keys.End:
+					e.Handled = true;
+					editCursorPos = editingTextObj.Text.Length;
+					RedrawWithEditingText();
+					break;
+			}
+		}
+
+		private void FormCollection_TextKeyPress(object sender, KeyPressEventArgs e)
+		{
+			if (editingTextObj == null) return;
+
+			// Handle printable characters
+			if (!char.IsControl(e.KeyChar))
+			{
+				e.Handled = true;
+				// Insert character at cursor position
+				editingTextObj.Text = editingTextObj.Text.Substring(0, editCursorPos) + 
+				                      e.KeyChar + 
+				                      editingTextObj.Text.Substring(editCursorPos);
+				editCursorPos++;
+				RedrawWithEditingText();
+			}
+		}
+
+		private void RedrawWithEditingText()
+		{
+			if (editingTextObj == null) return;
+
+			Root.FormDisplay.ClearCanvus();
+			Root.FormDisplay.DrawStrokes();
+			Root.FormDisplay.DrawTexts();
+			
+			// Draw the editing text with cursor
+			Root.FormDisplay.DrawEditingText(editingTextObj, editCursorPos, showCursor);
+			
+			Root.FormDisplay.DrawButtons(true);
+			Root.FormDisplay.UpdateFormDisplay(true);
+		}
+
+		private void FinishTextEditing()
+		{
+			if (editingTextObj == null) return;
+
+			if (editingTextObj.Text != null && editingTextObj.Text.Length > 0)
+			{
+				// Save undo before adding text
+				SaveUndoStrokes();
+
+				// Add to permanent text objects
+				Root.TextObjects.Add(editingTextObj);
+			}
+			
+			CleanupTextEditing();
+		}
+
+		public void CancelTextEditing()
+		{
+			CleanupTextEditing();
+		}
+
+		private void CleanupTextEditing()
+		{
+			// Remove event handlers
+			this.KeyPress -= FormCollection_TextKeyPress;
+			this.KeyDown -= FormCollection_TextKeyDown;
+			this.PreviewKeyDown -= FormCollection_PreviewKeyDown;
+			
+			// Reset key preview
+			this.KeyPreview = false;
+			
+			editingTextObj = null;
+			
+			// Redraw without editing text
+			Root.FormDisplay.ClearCanvus();
+			Root.FormDisplay.DrawStrokes();
+			Root.FormDisplay.DrawTexts();
+			Root.FormDisplay.DrawButtons(true);
+			Root.FormDisplay.UpdateFormDisplay(true);
+		}
+
+		private void FormCollection_MouseDown(object sender, MouseEventArgs e)
+		{
+			// Only handle if in text mode and click is outside toolbar
+			if (Root.TextMode)
+			{
+				// Check if click is outside toolbar area
+				Rectangle toolbarRect = new Rectangle(gpButtons.Left, gpButtons.Top, gpButtons.Width, gpButtons.Height);
+				if (!toolbarRect.Contains(e.Location))
+				{
+					StartTextEditing(e.X, e.Y);
+				}
+			}
 		}
 
 		short LastF4Status = 0;

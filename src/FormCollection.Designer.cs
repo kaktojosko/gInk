@@ -31,11 +31,12 @@
 			this.components = new System.ComponentModel.Container();
 			this.gpButtons = new System.Windows.Forms.Panel();
 			this.btInkVisible = new System.Windows.Forms.Button();
+			this.btText = new System.Windows.Forms.Button();
 			this.btPan = new System.Windows.Forms.Button();
 			this.btDock = new System.Windows.Forms.Button();
 			this.btPenWidth = new System.Windows.Forms.Button();
+			this.btTextSize = new System.Windows.Forms.Button();
 			this.btEraser = new System.Windows.Forms.Button();
-			this.btText = new System.Windows.Forms.Button();
 			this.btSnap = new System.Windows.Forms.Button();
 			this.btPointer = new System.Windows.Forms.Button();
 			this.btStop = new System.Windows.Forms.Button();
@@ -48,17 +49,22 @@
 			this.gpButtons.SuspendLayout();
 			this.gpPenWidth.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.pboxPenWidthIndicator)).BeginInit();
+			this.gpTextSize = new System.Windows.Forms.Panel();
+			this.pboxTextSizeIndicator = new System.Windows.Forms.PictureBox();
+			this.gpTextSize.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.pboxTextSizeIndicator)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// gpButtons
 			// 
 			this.gpButtons.BackColor = System.Drawing.Color.WhiteSmoke;
 			this.gpButtons.Controls.Add(this.btInkVisible);
+			this.gpButtons.Controls.Add(this.btText);
 			this.gpButtons.Controls.Add(this.btPan);
 			this.gpButtons.Controls.Add(this.btDock);
 			this.gpButtons.Controls.Add(this.btPenWidth);
+			this.gpButtons.Controls.Add(this.btTextSize);
 			this.gpButtons.Controls.Add(this.btEraser);
-			this.gpButtons.Controls.Add(this.btText);
 			this.gpButtons.Controls.Add(this.btSnap);
 			this.gpButtons.Controls.Add(this.btPointer);
 			this.gpButtons.Controls.Add(this.btStop);
@@ -90,6 +96,25 @@
 			this.btInkVisible.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseDown);
 			this.btInkVisible.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseMove);
 			this.btInkVisible.MouseUp += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseUp);
+			// 
+			// btText
+			// 
+			this.btText.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+			this.btText.FlatAppearance.BorderSize = 0;
+			this.btText.FlatAppearance.MouseDownBackColor = System.Drawing.Color.WhiteSmoke;
+			this.btText.FlatAppearance.MouseOverBackColor = System.Drawing.Color.WhiteSmoke;
+			this.btText.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+			this.btText.Image = global::niceink.Properties.Resources.text;
+			this.btText.Location = new System.Drawing.Point(1128, 4);
+			this.btText.Name = "btText";
+			this.btText.Size = new System.Drawing.Size(69, 69);
+			this.btText.TabIndex = 4;
+			this.toolTip.SetToolTip(this.btText, "Text Tool (T)");
+			this.btText.UseVisualStyleBackColor = true;
+			this.btText.Click += new System.EventHandler(this.btText_Click);
+			this.btText.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseDown);
+			this.btText.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseMove);
+			this.btText.MouseUp += new System.Windows.Forms.MouseEventHandler(this.btText_MouseUp);
 			// 
 			// btPan
 			// 
@@ -150,6 +175,25 @@
 			this.btPenWidth.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseMove);
 			this.btPenWidth.MouseUp += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseUp);
 			// 
+			// btTextSize
+			// 
+			this.btTextSize.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+			this.btTextSize.FlatAppearance.BorderSize = 0;
+			this.btTextSize.FlatAppearance.MouseDownBackColor = System.Drawing.Color.WhiteSmoke;
+			this.btTextSize.FlatAppearance.MouseOverBackColor = System.Drawing.Color.WhiteSmoke;
+			this.btTextSize.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+			this.btTextSize.Image = global::niceink.Properties.Resources.text;
+			this.btTextSize.Location = new System.Drawing.Point(470, 4);
+			this.btTextSize.Name = "btTextSize";
+			this.btTextSize.Size = new System.Drawing.Size(69, 69);
+			this.btTextSize.TabIndex = 0;
+			this.toolTip.SetToolTip(this.btTextSize, "Text size");
+			this.btTextSize.UseVisualStyleBackColor = true;
+			this.btTextSize.Click += new System.EventHandler(this.btTextSize_Click);
+			this.btTextSize.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseDown);
+			this.btTextSize.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseMove);
+			this.btTextSize.MouseUp += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseUp);
+			// 
 			// btEraser
 			// 
 			this.btEraser.FlatAppearance.BorderSize = 0;
@@ -168,25 +212,6 @@
 			this.btEraser.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseDown);
 			this.btEraser.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseMove);
 			this.btEraser.MouseUp += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseUp);
-			// 
-			// btText
-			// 
-			this.btText.FlatAppearance.BorderSize = 0;
-			this.btText.FlatAppearance.MouseDownBackColor = System.Drawing.Color.WhiteSmoke;
-			this.btText.FlatAppearance.MouseOverBackColor = System.Drawing.Color.WhiteSmoke;
-			this.btText.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-			this.btText.ForeColor = System.Drawing.Color.Transparent;
-			this.btText.Image = global::niceink.Properties.Resources.text;
-			this.btText.Location = new System.Drawing.Point(559, 4);
-			this.btText.Name = "btText";
-			this.btText.Size = new System.Drawing.Size(69, 69);
-			this.btText.TabIndex = 0;
-			this.toolTip.SetToolTip(this.btText, "Text");
-			this.btText.UseVisualStyleBackColor = false;
-			this.btText.Click += new System.EventHandler(this.btText_Click);
-			this.btText.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseDown);
-			this.btText.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseMove);
-			this.btText.MouseUp += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseUp);
 			// 
 			// btSnap
 			// 
@@ -317,12 +342,41 @@
 			this.pboxPenWidthIndicator.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pboxPenWidthIndicator_MouseMove);
 			this.pboxPenWidthIndicator.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pboxPenWidthIndicator_MouseUp);
 			// 
+			// gpTextSize
+			// 
+			this.gpTextSize.BackColor = System.Drawing.Color.WhiteSmoke;
+			this.gpTextSize.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+			this.gpTextSize.Controls.Add(this.pboxTextSizeIndicator);
+			this.gpTextSize.Location = new System.Drawing.Point(174, 326);
+			this.gpTextSize.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+			this.gpTextSize.Name = "gpTextSize";
+			this.gpTextSize.Size = new System.Drawing.Size(300, 80);
+			this.gpTextSize.TabIndex = 5;
+			this.gpTextSize.Visible = false;
+			this.gpTextSize.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gpTextSize_MouseDown);
+			this.gpTextSize.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpTextSize_MouseMove);
+			this.gpTextSize.MouseUp += new System.Windows.Forms.MouseEventHandler(this.gpTextSize_MouseUp);
+			// 
+			// pboxTextSizeIndicator
+			// 
+			this.pboxTextSizeIndicator.BackColor = System.Drawing.Color.Orange;
+			this.pboxTextSizeIndicator.Location = new System.Drawing.Point(117, 0);
+			this.pboxTextSizeIndicator.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+			this.pboxTextSizeIndicator.Name = "pboxTextSizeIndicator";
+			this.pboxTextSizeIndicator.Size = new System.Drawing.Size(8, 80);
+			this.pboxTextSizeIndicator.TabIndex = 5;
+			this.pboxTextSizeIndicator.TabStop = false;
+			this.pboxTextSizeIndicator.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pboxTextSizeIndicator_MouseDown);
+			this.pboxTextSizeIndicator.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pboxTextSizeIndicator_MouseMove);
+			this.pboxTextSizeIndicator.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pboxTextSizeIndicator_MouseUp);
+			// 
 			// FormCollection
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
 			this.BackColor = System.Drawing.Color.White;
 			this.ClientSize = new System.Drawing.Size(1294, 789);
+			this.Controls.Add(this.gpTextSize);
 			this.Controls.Add(this.gpPenWidth);
 			this.Controls.Add(this.gpButtons);
 			this.ForeColor = System.Drawing.Color.LawnGreen;
@@ -336,9 +390,12 @@
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormCollection_FormClosing);
 			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.FormCollection_FormClosed);
 			this.Load += new System.EventHandler(this.Form1_Load);
+			this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FormCollection_MouseDown);
 			this.gpButtons.ResumeLayout(false);
 			this.gpPenWidth.ResumeLayout(false);
 			((System.ComponentModel.ISupportInitialize)(this.pboxPenWidthIndicator)).EndInit();
+			this.gpTextSize.ResumeLayout(false);
+			((System.ComponentModel.ISupportInitialize)(this.pboxTextSizeIndicator)).EndInit();
 			this.ResumeLayout(false);
 
 		}
@@ -355,12 +412,15 @@
 		public System.Windows.Forms.Button btSnap;
 		public System.Windows.Forms.Button btPointer;
 		public System.Windows.Forms.Button btPenWidth;
+		public System.Windows.Forms.Button btTextSize;
 		public System.Windows.Forms.ToolTip toolTip;
 		public System.Windows.Forms.Panel gpPenWidth;
 		private System.Windows.Forms.PictureBox pboxPenWidthIndicator;
 		public System.Windows.Forms.Button btPan;
-		public System.Windows.Forms.Button btInkVisible;
 		public System.Windows.Forms.Button btText;
+		public System.Windows.Forms.Button btInkVisible;
+		public System.Windows.Forms.Panel gpTextSize;
+		private System.Windows.Forms.PictureBox pboxTextSizeIndicator;
 	}
 }
 
